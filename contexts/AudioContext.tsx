@@ -25,12 +25,12 @@ interface AudioContextType {
   togglePlay: () => void;
   uploadTrack: (file: File) => void;
   setMainVolume: (vol: number) => void;
-  
+
   // Ambience State
   layers: AmbienceLayer[];
   toggleLayer: (id: string) => void;
   updateLayerVolume: (id: string, volume: number) => void;
-  
+
   // Zen Mode
   toggleZenMode: () => void;
 }
@@ -48,11 +48,15 @@ const INITIAL_LAYERS: AmbienceLayer[] = [
 
 export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // --- Refs ---
-  const mainAudioRef = useRef<HTMLAudioElement>(new Audio());
+  const mainAudioRef = useRef<HTMLAudioElement>(new Audio("/music/cancion.mp3"));
   const layerAudioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
 
   // --- State ---
-  const [mainTrack, setMainTrack] = useState<Track | null>(null);
+  const [mainTrack, setMainTrack] = useState<Track | null>({
+    title: "Radio Lunar",
+    artist: "En Vivo",
+    src: "/music/cancion.mp3"
+  });
   const [isPlaying, setIsPlaying] = useState(false);
   const [mainVolume, setMainVolumeState] = useState(0.5);
   const [layers, setLayers] = useState<AmbienceLayer[]>(INITIAL_LAYERS);
@@ -82,7 +86,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // --- Main Track Logic ---
   const togglePlay = () => {
     if (!mainTrack) return;
-    
+
     if (isPlaying) {
       mainAudioRef.current.pause();
     } else {
@@ -98,7 +102,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       title: file.name.replace(/\.[^/.]+$/, ""), // Remove extension
       artist: 'Local Upload'
     };
-    
+
     setMainTrack(newTrack);
     mainAudioRef.current.src = url;
     mainAudioRef.current.volume = mainVolume;
@@ -149,14 +153,14 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const toggleZenMode = () => {
     // Fade out main track
     const fadeOut = setInterval(() => {
-        if(mainAudioRef.current.volume > 0.05) {
-            mainAudioRef.current.volume -= 0.05;
-        } else {
-            mainAudioRef.current.pause();
-            mainAudioRef.current.volume = mainVolume; // Restore volume setting for next play
-            setIsPlaying(false);
-            clearInterval(fadeOut);
-        }
+      if (mainAudioRef.current.volume > 0.05) {
+        mainAudioRef.current.volume -= 0.05;
+      } else {
+        mainAudioRef.current.pause();
+        mainAudioRef.current.volume = mainVolume; // Restore volume setting for next play
+        setIsPlaying(false);
+        clearInterval(fadeOut);
+      }
     }, 100);
   };
 
