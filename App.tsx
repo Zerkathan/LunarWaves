@@ -8,22 +8,29 @@ import TodoList from './components/TodoList';
 import LevelTracker from './components/LevelTracker';
 import MeditateMode from './components/MeditateMode';
 import DailyReflection from './components/DailyReflection';
-import { useAudio } from './hooks/useAudio';
+import CalendarWidget from './components/CalendarWidget';
+import { AudioProvider, useAudioContext } from './contexts/AudioContext';
+import { SpotifyProvider } from './contexts/SpotifyContext';
 import { Todo } from './types';
 
-const App: React.FC = () => {
-  const { isPlaying, toggleAudio, volume, setVolume } = useAudio();
+// Wrapper component to access context for Visualizer
+const AppContent: React.FC = () => {
+  const { isPlaying, layers } = useAudioContext();
+  
+  // Check if anything is playing for visualizer
+  const isAnyAudioActive = isPlaying || layers.some(l => l.isActive);
   
   // Lifted Todo State
   const [todos, setTodos] = useState<Todo[]>([]);
   // Reflection State
   const [reflection, setReflection] = useState('');
 
-  const handleAddTodo = (text: string) => {
+  const handleAddTodo = (text: string, dueTime?: number) => {
     const newTodo: Todo = {
       id: Date.now(),
       text,
-      completed: false
+      completed: false,
+      dueTime
     };
     setTodos([...todos, newTodo]);
   };
@@ -44,7 +51,7 @@ const App: React.FC = () => {
   return (
     <div className="relative w-full min-h-screen overflow-hidden bg-[#050511] text-slate-200">
       {/* Background Visualizer Layer */}
-      <Visualizer isActive={isPlaying} />
+      <Visualizer isActive={isAnyAudioActive} />
 
       {/* UI Layer */}
       <div className="relative z-10 min-h-screen flex flex-col justify-between p-6">
@@ -78,6 +85,10 @@ const App: React.FC = () => {
               onToggle={handleToggleTodo}
               onDelete={handleDeleteTodo}
             />
+            <CalendarWidget 
+              onAddEvent={handleAddTodo} 
+              todos={todos} 
+            />
             <MeditateMode />
             <DailyReflection reflection={reflection} onUpdate={setReflection} />
             
@@ -90,16 +101,21 @@ const App: React.FC = () => {
 
         {/* Footer Controls */}
         <div className="pb-4">
-           <AudioControl 
-             isPlaying={isPlaying} 
-             toggleAudio={toggleAudio} 
-             volume={volume} 
-             setVolume={setVolume} 
-           />
+           <AudioControl /> 
         </div>
 
       </div>
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <SpotifyProvider>
+      <AudioProvider>
+        <AppContent />
+      </AudioProvider>
+    </SpotifyProvider>
   );
 };
 

@@ -46,4 +46,3 @@ You need a Google Gemini API Key to use the "Smart Focus" feature.
 ## 📄 License
 
 MIT
-# LunarWaves
