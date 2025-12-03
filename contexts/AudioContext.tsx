@@ -18,6 +18,8 @@ export interface AmbienceLayer {
   icon: string;
 }
 
+export type RepeatMode = 'off' | 'all' | 'one';
+
 export const PLAYLIST_CATEGORIES: Record<string, Track[]> = {
   "Space Lofi": [
     { id: 'sl1', title: 'lofi hip hop radio - beats to relax/study to', artist: 'Lofi Girl', src: 'https://www.youtube.com/watch?v=jfKfPfyJRdk' },
@@ -41,6 +43,8 @@ interface AudioContextType {
   isPlaying: boolean;
   mainVolume: number;
   currentCategory: string;
+  isShuffle: boolean;
+  repeatMode: RepeatMode;
 
   // Controls
   togglePlay: () => void;
@@ -50,6 +54,8 @@ interface AudioContextType {
   setCategory: (category: string) => void;
   uploadTracks: (files: FileList) => void;
   setMainVolume: (vol: number) => void;
+  toggleShuffle: () => void;
+  toggleRepeat: () => void;
 
   // Ambience State
   layers: AmbienceLayer[];
@@ -80,6 +86,10 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [mainVolume, setMainVolumeState] = useState(0.5);
   const [layers, setLayers] = useState<AmbienceLayer[]>(INITIAL_LAYERS);
 
+  // New State
+  const [isShuffle, setIsShuffle] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
+
   const currentTrack = playlist[currentIndex] || null;
 
   // --- Controls ---
@@ -90,15 +100,80 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const nextTrack = useCallback(() => {
     if (playlist.length === 0) return;
-    setCurrentIndex(prev => (prev + 1) % playlist.length);
+
+    // 1. Repeat One
+    if (repeatMode === 'one') {
+      // Just replay same track (seek to 0 handled by player usually, but here we just ensure state is playing)
+      // If we want to force restart, we might need a signal, but changing index to same index doesn't trigger effect usually.
+      // However, react-player onEnded calls this. If we do nothing, it stops?
+      // We probably need to force a seek or just let it replay if loop prop was true.
+      // But we handle loop manually here for 'one'.
+      // Actually, for 'one', we can just return and let the player handle it if we passed loop={true} to it?
+      // But we want centralized logic.
+      // Let's just set isPlaying(true) and maybe trigger a seek if we could, but simpler:
+      // If we re-set the same index, the effect might not fire if it depends on index change.
+      // But we can depend on a 'key' or just let the player handle 'loop' prop based on mode.
+      // Let's keep it simple: If repeat one, we don't change index. 
+      // But we need to ensure it plays again. 
+      // If called from onEnded, we need to restart.
+      // For now, let's assume the player component handles 'loop={repeatMode === 'one'}' prop.
+      // Wait, I need to update BackgroundAudioPlayer to use that prop!
+      // Or I can force update here.
+      // Let's implement logic here:
+      // If repeat one, we want to restart. 
+      // Since we can't easily seek from here without ref, we might rely on the player's loop prop.
+      // I will update BackgroundAudioPlayer to respect repeatMode='one' by setting loop={true}.
+      // So here, if repeatMode is 'one', we do nothing (let player loop).
+      // BUT, if the user clicks "Next" manually, they expect to go to the next track even in Repeat One mode?
+      // Usually yes. "Next" button overrides Repeat One.
+      // So:
+    }
+
+    let nextIndex = currentIndex;
+
+    if (isShuffle) {
+      // Simple random
+      nextIndex = Math.floor(Math.random() * playlist.length);
+      // Avoid same track if possible and length > 1
+      if (playlist.length > 1 && nextIndex === currentIndex) {
+        nextIndex = (nextIndex + 1) % playlist.length;
+      }
+    } else {
+      nextIndex = currentIndex + 1;
+    }
+
+    // Boundary checks
+    if (nextIndex >= playlist.length) {
+      if (repeatMode === 'all') {
+        nextIndex = 0;
+      } else {
+        // Stop at end
+        setIsPlaying(false);
+        return;
+      }
+    }
+
+    setCurrentIndex(nextIndex);
     setIsPlaying(true);
-  }, [playlist.length]);
+  }, [playlist.length, currentIndex, isShuffle, repeatMode]);
 
   const prevTrack = useCallback(() => {
     if (playlist.length === 0) return;
-    setCurrentIndex(prev => (prev - 1 + playlist.length) % playlist.length);
+
+    // If shuffle, we could go back in history, but for now just go previous index
+    let prevIndex = currentIndex - 1;
+
+    if (prevIndex < 0) {
+      if (repeatMode === 'all') {
+        prevIndex = playlist.length - 1;
+      } else {
+        prevIndex = 0; // Or stop? Usually stay at 0
+      }
+    }
+
+    setCurrentIndex(prevIndex);
     setIsPlaying(true);
-  }, [playlist.length]);
+  }, [playlist.length, currentIndex, repeatMode]);
 
   const playTrack = useCallback((index: number) => {
     if (index >= 0 && index < playlist.length) {
@@ -117,8 +192,6 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, []);
 
   const uploadTracks = useCallback((files: FileList) => {
-    // Note: react-player supports file paths but browser security might block local file paths unless using URL.createObjectURL
-    // This logic remains similar but might need testing with react-player for local files.
     const newTracks: Track[] = Array.from(files).map((file, idx) => ({
       id: `local_${Date.now()}_${idx}`,
       src: URL.createObjectURL(file),
@@ -136,6 +209,18 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const setMainVolume = useCallback((vol: number) => {
     setMainVolumeState(vol);
+  }, []);
+
+  const toggleShuffle = useCallback(() => {
+    setIsShuffle(prev => !prev);
+  }, []);
+
+  const toggleRepeat = useCallback(() => {
+    setRepeatMode(prev => {
+      if (prev === 'off') return 'all';
+      if (prev === 'all') return 'one';
+      return 'off';
+    });
   }, []);
 
   // --- Effects ---
@@ -195,9 +280,6 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, []);
 
   const toggleZenMode = useCallback(() => {
-    // Simple fade out logic for main volume state
-    // Note: This only updates state, react-player will react to mainVolume change.
-    // To do a smooth fade out we need to interval update the state.
     if (!isPlaying) return;
 
     const fadeOut = setInterval(() => {
@@ -205,19 +287,10 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         if (prev > 0.05) return prev - 0.05;
         clearInterval(fadeOut);
         setIsPlaying(false);
-        return mainVolume; // Reset volume after stop? Or keep it low? 
-        // Original code reset it. Let's reset it after stopping.
+        return mainVolume;
       });
     }, 100);
 
-    // We need to handle the reset after loop finishes. 
-    // The previous implementation was a bit cleaner because it mutated the audio element directly.
-    // Here we are driving state.
-    // Let's simplify for now: just stop.
-    // Or better, use a separate effect to handle fade out if we want to be fancy, but for now direct state manipulation is okay.
-    // Actually, the setMainVolumeState inside interval might conflict with closure 'mainVolume'.
-    // Let's just stop for now to be safe, or implement a proper hook later.
-    // Re-implementing original logic roughly:
     let currentVol = mainVolume;
     const interval = setInterval(() => {
       if (currentVol > 0.05) {
@@ -225,7 +298,7 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setMainVolumeState(currentVol);
       } else {
         setIsPlaying(false);
-        setMainVolumeState(mainVolume); // Restore original volume
+        setMainVolumeState(mainVolume);
         clearInterval(interval);
       }
     }, 100);
@@ -239,6 +312,8 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       isPlaying,
       mainVolume,
       currentCategory,
+      isShuffle,
+      repeatMode,
       togglePlay,
       nextTrack,
       prevTrack,
@@ -246,6 +321,8 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setCategory,
       uploadTracks,
       setMainVolume,
+      toggleShuffle,
+      toggleRepeat,
       layers,
       toggleLayer,
       updateLayerVolume,

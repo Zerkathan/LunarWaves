@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Play, Pause, Upload, Sliders, Music2, Volume2, VolumeX, Smartphone, SkipForward, SkipBack, ListMusic, Radio } from 'lucide-react';
+import { Play, Pause, Upload, Sliders, Music2, Volume2, VolumeX, Smartphone, SkipForward, SkipBack, ListMusic, Radio, Shuffle, Repeat, Repeat1 } from 'lucide-react';
 import { useAudioContext, PLAYLIST_CATEGORIES } from '../contexts/AudioContext';
 import ScrollingMarquee from './ScrollingMarquee';
 import AmbienceMixer from './AmbienceMixer';
@@ -16,7 +16,11 @@ const AudioControl: React.FC = () => {
     mainVolume,
     setMainVolume,
     currentCategory,
-    setCategory
+    setCategory,
+    isShuffle,
+    repeatMode,
+    toggleShuffle,
+    toggleRepeat
   } = useAudioContext();
 
   const [isMixerOpen, setIsMixerOpen] = useState(false);
@@ -55,8 +59,8 @@ const AudioControl: React.FC = () => {
                 setShowCategorySelector(false);
               }}
               className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${currentCategory === cat
-                  ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
-                  : 'text-slate-300 hover:bg-white/5'
+                ? 'bg-violet-600/20 text-violet-300 border border-violet-500/30'
+                : 'text-slate-300 hover:bg-white/5'
                 }`}
             >
               {cat}
@@ -73,6 +77,15 @@ const AudioControl: React.FC = () => {
         <div className="flex items-center gap-4 w-full md:w-auto overflow-hidden">
           {/* Controls Group */}
           <div className="flex items-center gap-2">
+            {/* Shuffle Button */}
+            <button
+              onClick={toggleShuffle}
+              className={`p-2 transition-colors hover:scale-110 ${isShuffle ? 'text-violet-400' : 'text-slate-500 hover:text-white'}`}
+              title="Shuffle"
+            >
+              <Shuffle size={16} />
+            </button>
+
             <button
               onClick={prevTrack}
               className="p-2 text-slate-400 hover:text-white transition-colors hover:scale-110"
@@ -85,8 +98,8 @@ const AudioControl: React.FC = () => {
               onClick={togglePlay}
               disabled={!currentTrack}
               className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${currentTrack
-                  ? 'bg-violet-600 text-white hover:bg-violet-500 shadow-violet-500/40'
-                  : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                ? 'bg-violet-600 text-white hover:bg-violet-500 shadow-violet-500/40'
+                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                 }`}
             >
               {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
@@ -98,6 +111,15 @@ const AudioControl: React.FC = () => {
               aria-label="Next Track"
             >
               <SkipForward size={18} fill="currentColor" />
+            </button>
+
+            {/* Repeat Button */}
+            <button
+              onClick={toggleRepeat}
+              className={`p-2 transition-colors hover:scale-110 ${repeatMode !== 'off' ? 'text-violet-400' : 'text-slate-500 hover:text-white'}`}
+              title="Repeat"
+            >
+              {repeatMode === 'one' ? <Repeat1 size={16} /> : <Repeat size={16} />}
             </button>
           </div>
 
