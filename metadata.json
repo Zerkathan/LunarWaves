@@ -1,0 +1,5 @@
+{
+  "name": "Lunar Waves",
+  "description": "A focus and relaxation app featuring a brown noise generator, Pomodoro timer, and an ambient wave visualizer. Includes AI-powered focus strategies.",
+  "requestFramePermissions": []
+}
