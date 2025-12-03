@@ -9,7 +9,6 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
-  isAuthenticated: boolean;
   isLoading: boolean;
   loginWithGoogle: () => Promise<void>;
   loginAsGuest: () => void;
@@ -18,66 +17,53 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const MOCK_USER: User = {
-  id: 'usr_123456',
-  name: 'Cosmic Traveler',
-  email: 'traveler@lunar.waves',
-  avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
-};
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
+  // Check for persisted user on mount
   useEffect(() => {
-    // Check localStorage on mount
     const storedUser = localStorage.getItem('lunar_user');
-    const storedAuth = localStorage.getItem('lunar_auth');
-
-    if (storedAuth === 'true') {
-      setIsAuthenticated(true);
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      }
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
-    setIsLoading(false);
   }, []);
 
   const loginWithGoogle = async () => {
     setIsLoading(true);
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    setUser(MOCK_USER);
-    setIsAuthenticated(true);
-    localStorage.setItem('lunar_user', JSON.stringify(MOCK_USER));
-    localStorage.setItem('lunar_auth', 'true');
-    setIsLoading(false);
+    // SIMULATION: In a real app, this would be the Google Auth popup
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        const mockUser: User = {
+          id: 'google_123',
+          name: 'Cosmic Traveler',
+          email: 'traveler@lunar.app',
+          // Random avatar generator for visual flair
+          avatar: `https://api.dicebear.com/9.x/micah/svg?seed=${Math.floor(Math.random() * 1000)}&backgroundColor=b6e3f4`
+        };
+        setUser(mockUser);
+        localStorage.setItem('lunar_user', JSON.stringify(mockUser));
+        setIsLoading(false);
+        resolve();
+      }, 1500); // Fake network delay
+    });
   };
 
   const loginAsGuest = () => {
-    setUser(null);
-    setIsAuthenticated(true);
-    localStorage.setItem('lunar_auth', 'true');
+    // Guest doesn't have a user profile, but bypasses login screen
+    setIsLoading(true);
+    setTimeout(() => {
+        setIsLoading(false);
+    }, 500);
   };
 
   const logout = () => {
     setUser(null);
-    setIsAuthenticated(false);
     localStorage.removeItem('lunar_user');
-    localStorage.removeItem('lunar_auth');
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      isLoading,
-      loginWithGoogle,
-      loginAsGuest,
-      logout
-    }}>
+    <AuthContext.Provider value={{ user, isLoading, loginWithGoogle, loginAsGuest, logout }}>
       {children}
     </AuthContext.Provider>
   );

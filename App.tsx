@@ -29,7 +29,9 @@ const AppContent: React.FC = () => {
   
   const [hasStarted, setHasStarted] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [waveColor, setWaveColor] = useState('#8b5cf6');
+  
+  // Wave Colors State: Array of 3 colors
+  const [waveColors, setWaveColors] = useState<string[]>(['#8b5cf6', '#8b5cf6', '#8b5cf6']);
 
   // Lifted States
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -38,22 +40,14 @@ const AppContent: React.FC = () => {
   // Check audio activity
   const isAnyAudioActive = isPlaying || layers.some(l => l.isActive);
 
-  // If user is already logged in from localStorage, we skip the intro strictly speaking,
-  // BUT we still need a "Click" to start audio context.
-  // So we just change the button text in the intro.
-
   const handleStartSession = async (method: 'google' | 'guest') => {
-    // 1. Initialize Audio Context (Browser requirement)
     if (!isPlaying) togglePlay();
 
-    // 2. Perform Login
     if (method === 'google') {
         await loginWithGoogle();
     } else {
         loginAsGuest();
     }
-    
-    // 3. Remove Overlay
     setHasStarted(true);
   };
 
@@ -68,6 +62,14 @@ const AppContent: React.FC = () => {
 
   const handleDeleteTodo = (id: number) => {
     setTodos(todos.filter(t => t.id !== id));
+  };
+
+  const updateWaveColor = (index: number, color: string) => {
+      setWaveColors(prev => {
+          const newColors = [...prev];
+          newColors[index] = color;
+          return newColors;
+      });
   };
 
   const completedCount = todos.filter(t => t.completed).length;
@@ -141,7 +143,7 @@ const AppContent: React.FC = () => {
       )}
 
       {/* Background Visualizer Layer */}
-      <Visualizer isActive={isAnyAudioActive} baseColor={waveColor} />
+      <Visualizer isActive={isAnyAudioActive} waveColors={waveColors} />
 
       {/* UI Layer */}
       <div className={`relative z-10 min-h-screen flex flex-col justify-between p-6 transition-opacity duration-1000 ${hasStarted ? 'opacity-100' : 'opacity-0'}`}>
@@ -150,7 +152,7 @@ const AppContent: React.FC = () => {
         <header className="flex justify-between items-center max-w-6xl mx-auto w-full relative z-50">
           <div className="flex items-center gap-3 group cursor-default">
             <div className="p-2 bg-white/5 rounded-lg border border-white/10 group-hover:border-white/30 transition-colors">
-                <Waves style={{ color: waveColor }} size={24} />
+                <Waves style={{ color: waveColors[0] }} size={24} />
             </div>
             <h1 className="hidden sm:block text-xl font-bold tracking-wider text-slate-100 font-space-mono">
               LUNAR WAVES
@@ -168,18 +170,27 @@ const AppContent: React.FC = () => {
                   <Settings2 size={20} />
                 </button>
                 {isSettingsOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-slate-900/90 border border-white/10 rounded-xl shadow-xl backdrop-blur-xl p-3 animate-in fade-in zoom-in-95 duration-200">
-                    <h3 className="text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-wider">Wave Color</h3>
-                    <div className="grid grid-cols-5 gap-2">
-                      {colorPalettes.map((palette) => (
-                        <button
-                          key={palette.hex}
-                          onClick={() => setWaveColor(palette.hex)}
-                          className="w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-110 border border-white/10 relative"
-                          style={{ backgroundColor: palette.hex }}
-                        >
-                          {waveColor === palette.hex && <Check size={14} className="text-white drop-shadow-md" />}
-                        </button>
+                  <div className="absolute top-full right-0 mt-2 w-52 bg-slate-900/95 border border-white/10 rounded-xl shadow-xl backdrop-blur-xl p-3 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                      {[0, 1, 2].map((layerIndex) => (
+                        <div key={layerIndex} className="mb-3 last:mb-0">
+                            <h3 className="text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-wider">
+                                Wave {layerIndex + 1}
+                            </h3>
+                            <div className="grid grid-cols-5 gap-2">
+                            {colorPalettes.map((palette) => (
+                                <button
+                                key={palette.hex}
+                                onClick={() => updateWaveColor(layerIndex, palette.hex)}
+                                className="w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110 border border-white/10 relative"
+                                style={{ backgroundColor: palette.hex }}
+                                title={palette.name}
+                                >
+                                {waveColors[layerIndex] === palette.hex && <Check size={10} className="text-white drop-shadow-md" />}
+                                </button>
+                            ))}
+                            </div>
+                        </div>
                       ))}
                     </div>
                   </div>

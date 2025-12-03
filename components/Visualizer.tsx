@@ -3,18 +3,21 @@ import { Star } from '../types';
 
 interface VisualizerProps {
   isActive: boolean;
-  baseColor?: string; // Hex color
+  waveColors: string[]; // Changed from single string to array
 }
 
 // Helper to convert hex to rgba
 const hexToRgba = (hex: string, alpha: number) => {
+  // Fallback for safety
+  if (!hex) return `rgba(139, 92, 246, ${alpha})`;
+  
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-const Visualizer: React.FC<VisualizerProps> = ({ isActive, baseColor = '#8b5cf6' }) => {
+const Visualizer: React.FC<VisualizerProps> = ({ isActive, waveColors }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>(0);
   const timeRef = useRef<number>(0);
@@ -54,10 +57,16 @@ const Visualizer: React.FC<VisualizerProps> = ({ isActive, baseColor = '#8b5cf6'
     const t = timeRef.current;
 
     // Define Dynamic Waves based on props
+    // We Map each color in the array to a specific wave definition
+    // Ensure we have fallback colors if array is short
+    const c1 = waveColors[0] || '#8b5cf6';
+    const c2 = waveColors[1] || '#8b5cf6';
+    const c3 = waveColors[2] || '#8b5cf6';
+
     const waveDefinitions = [
-        { length: 0.006, amplitude: 50, speed: 0.01, color: hexToRgba(baseColor, 0.2) },
-        { length: 0.012, amplitude: 30, speed: 0.02, color: hexToRgba(baseColor, 0.2) },
-        { length: 0.004, amplitude: 60, speed: 0.005, color: hexToRgba(baseColor, 0.1) }
+        { length: 0.006, amplitude: 50, speed: 0.01, color: hexToRgba(c1, 0.2) },
+        { length: 0.012, amplitude: 30, speed: 0.02, color: hexToRgba(c2, 0.2) },
+        { length: 0.004, amplitude: 60, speed: 0.005, color: hexToRgba(c3, 0.1) }
     ];
 
     // Rhythm Simulation:
@@ -119,7 +128,7 @@ const Visualizer: React.FC<VisualizerProps> = ({ isActive, baseColor = '#8b5cf6'
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, baseColor]); // Re-init if active state or color changes
+  }, [isActive, waveColors]); // Re-init if active state or colors change
 
   return (
     <canvas 
