@@ -31,12 +31,6 @@ interface AudioContextType {
   toggleLayer: (id: string) => void;
   updateLayerVolume: (id: string, volume: number) => void;
   
-  // Brown Noise Generator
-  isBrownNoiseActive: boolean;
-  brownNoiseVolume: number;
-  toggleBrownNoise: () => void;
-  setBrownNoiseVolume: (vol: number) => void;
-  
   // Zen Mode
   toggleZenMode: () => void;
 }
@@ -56,17 +50,12 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // --- Refs ---
   const mainAudioRef = useRef<HTMLAudioElement>(new Audio());
   const layerAudioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const noiseNodeRef = useRef<AudioBufferSourceNode | null>(null);
-  const noiseGainRef = useRef<GainNode | null>(null);
 
   // --- State ---
   const [mainTrack, setMainTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [mainVolume, setMainVolumeState] = useState(0.5);
   const [layers, setLayers] = useState<AmbienceLayer[]>(INITIAL_LAYERS);
-  const [isBrownNoiseActive, setIsBrownNoiseActive] = useState(false);
-  const [brownNoiseVolume, setBrownNoiseVolumeState] = useState(0.5);
 
   // --- Initialization of Layers ---
   useEffect(() => {
@@ -157,75 +146,6 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }));
   };
 
-  // --- Brown Noise Generator Logic ---
-  const initBrownNoise = () => {
-    if (audioContextRef.current) return; // Already initialized
-
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    audioContextRef.current = audioCtx;
-
-    // Create brown noise buffer
-    const bufferSize = audioCtx.sampleRate * 2;
-    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    
-    let lastOut = 0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      data[i] = (lastOut + (0.02 * white)) / 1.02;
-      lastOut = data[i];
-      data[i] *= 3.5; // Amplify
-    }
-
-    // Create source node
-    const noiseNode = audioCtx.createBufferSource();
-    noiseNode.buffer = buffer;
-    noiseNode.loop = true;
-
-    // Create filter for brown noise characteristics
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 400;
-
-    // Create gain node
-    const gainNode = audioCtx.createGain();
-    gainNode.gain.value = brownNoiseVolume;
-
-    // Connect nodes
-    noiseNode.connect(filter);
-    filter.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-
-    // Start the noise
-    noiseNode.start();
-
-    noiseNodeRef.current = noiseNode;
-    noiseGainRef.current = gainNode;
-  };
-
-  const toggleBrownNoise = () => {
-    if (!audioContextRef.current) {
-      initBrownNoise();
-      setIsBrownNoiseActive(true);
-      return;
-    }
-
-    if (isBrownNoiseActive) {
-      audioContextRef.current.suspend();
-      setIsBrownNoiseActive(false);
-    } else {
-      audioContextRef.current.resume();
-      setIsBrownNoiseActive(true);
-    }
-  };
-
-  const setBrownNoiseVolume = (vol: number) => {
-    setBrownNoiseVolumeState(vol);
-    if (noiseGainRef.current) {
-      noiseGainRef.current.gain.value = vol;
-    }
-  };
-
   const toggleZenMode = () => {
     // Fade out main track
     const fadeOut = setInterval(() => {
@@ -251,10 +171,6 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       layers,
       toggleLayer,
       updateLayerVolume,
-      isBrownNoiseActive,
-      brownNoiseVolume,
-      toggleBrownNoise,
-      setBrownNoiseVolume,
       toggleZenMode
     }}>
       {children}

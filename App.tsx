@@ -9,8 +9,7 @@ import LevelTracker from './components/LevelTracker';
 import MeditateMode from './components/MeditateMode';
 import DailyReflection from './components/DailyReflection';
 import CalendarWidget from './components/CalendarWidget';
-import { AudioProvider, useAudioContext } from './contexts/AudioContext';
-import { SpotifyProvider } from './contexts/SpotifyContext';
+import { AudioProvider, useAudioContext } from './contexts/AudioContext'; // New Context
 import { Todo } from './types';
 
 // Wrapper component to access context for Visualizer
@@ -111,11 +110,9 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <SpotifyProvider>
-      <AudioProvider>
-        <AppContent />
-      </AudioProvider>
-    </SpotifyProvider>
+    <AudioProvider>
+      <AppContent />
+    </AudioProvider>
   );
 };
 
