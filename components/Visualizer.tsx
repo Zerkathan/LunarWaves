@@ -1,21 +1,23 @@
 import React, { useEffect, useRef } from 'react';
-import { WaveConfig, Star } from '../types';
+import { Star } from '../types';
 
 interface VisualizerProps {
   isActive: boolean;
+  baseColor?: string; // Hex color
 }
 
-const Visualizer: React.FC<VisualizerProps> = ({ isActive }) => {
+// Helper to convert hex to rgba
+const hexToRgba = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const Visualizer: React.FC<VisualizerProps> = ({ isActive, baseColor = '#8b5cf6' }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number>(0);
   const timeRef = useRef<number>(0);
-
-  // Configuration
-  const waves: WaveConfig[] = [
-    { y: 0, length: 0.01, amplitude: 50, speed: 0.01, color: 'rgba(139, 92, 246, 0.2)' },
-    { y: 0, length: 0.02, amplitude: 30, speed: 0.02, color: 'rgba(56, 189, 248, 0.2)' },
-    { y: 0, length: 0.005, amplitude: 80, speed: 0.005, color: 'rgba(76, 29, 149, 0.1)' }
-  ];
 
   const starsRef = useRef<Star[]>([]);
 
@@ -46,24 +48,42 @@ const Visualizer: React.FC<VisualizerProps> = ({ isActive }) => {
     });
 
     // Update time
-    // If audio is active, waves move faster
-    const timeStep = isActive ? 0.02 : 0.005;
+    // If audio is active, time moves faster
+    const timeStep = isActive ? 0.03 : 0.005;
     timeRef.current += timeStep;
     const t = timeRef.current;
 
+    // Define Dynamic Waves based on props
+    const waveDefinitions = [
+        { length: 0.006, amplitude: 50, speed: 0.01, color: hexToRgba(baseColor, 0.2) },
+        { length: 0.012, amplitude: 30, speed: 0.02, color: hexToRgba(baseColor, 0.2) },
+        { length: 0.004, amplitude: 60, speed: 0.005, color: hexToRgba(baseColor, 0.1) }
+    ];
+
+    // Rhythm Simulation:
+    // Create a "pulse" that mimics a beat by combining sine waves at different frequencies.
+    // This makes the waves jump up and down rhythmically when active.
+    const beatPulse = isActive 
+        ? Math.sin(t * 8) * 15 + Math.cos(t * 17) * 10 // Fast complex beat
+        : 0;
+
     // Draw Waves
-    waves.forEach((wave, i) => {
+    waveDefinitions.forEach((wave, i) => {
       ctx.beginPath();
       ctx.moveTo(0, height / 2);
 
       for (let x = 0; x < width; x += 5) { // Optimization: step by 5px
-        // Amplitude modulation based on audio state
+        // Amplitude modulation
         const baseAmp = wave.amplitude;
-        const activeAmp = isActive ? baseAmp * 1.5 : baseAmp;
+        
+        // When active, increase amplitude AND apply the beat pulse
+        const activeAmp = isActive ? (baseAmp * 1.2) + beatPulse : baseAmp;
         
         // Complex sine wave function
-        const y = Math.sin(x * wave.length + t + (i * 10)) * activeAmp * Math.sin(t * 0.5);
-        ctx.lineTo(x, (height / 2) + y + (i * 20));
+        // Add (i * 10) phase shift so waves don't overlap perfectly
+        const y = Math.sin(x * wave.length + t + (i * 10)) * activeAmp * Math.sin(t * 0.5 + i);
+        
+        ctx.lineTo(x, (height / 2) + y + (i * 20)); // Offset Y slightly per wave
       }
 
       ctx.lineTo(width, height);
@@ -90,6 +110,8 @@ const Visualizer: React.FC<VisualizerProps> = ({ isActive }) => {
     window.addEventListener('resize', resize);
     resize();
 
+    // Start animation loop
+    if (requestRef.current) cancelAnimationFrame(requestRef.current);
     requestRef.current = requestAnimationFrame(() => animate(ctx, canvas.width, canvas.height));
 
     return () => {
@@ -97,12 +119,12 @@ const Visualizer: React.FC<VisualizerProps> = ({ isActive }) => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive]); 
+  }, [isActive, baseColor]); // Re-init if active state or color changes
 
   return (
     <canvas 
       ref={canvasRef} 
-      className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none"
+      className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none transition-opacity duration-1000"
     />
   );
 };

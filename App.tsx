@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Waves } from 'lucide-react';
+import { Waves, Settings2, Check } from 'lucide-react';
 import Visualizer from './components/Visualizer';
 import Timer from './components/Timer';
 import AudioControl from './components/AudioControl';
@@ -9,7 +9,7 @@ import LevelTracker from './components/LevelTracker';
 import MeditateMode from './components/MeditateMode';
 import DailyReflection from './components/DailyReflection';
 import CalendarWidget from './components/CalendarWidget';
-import { AudioProvider, useAudioContext } from './contexts/AudioContext'; // New Context
+import { AudioProvider, useAudioContext } from './contexts/AudioContext';
 import { Todo } from './types';
 
 // Wrapper component to access context for Visualizer
@@ -23,6 +23,18 @@ const AppContent: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   // Reflection State
   const [reflection, setReflection] = useState('');
+  
+  // Settings State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [waveColor, setWaveColor] = useState('#8b5cf6'); // Default Violet
+
+  const colorPalettes = [
+    { name: 'Nebula', hex: '#8b5cf6' }, // Violet
+    { name: 'Ocean', hex: '#06b6d4' },  // Cyan
+    { name: 'Aurora', hex: '#10b981' }, // Emerald
+    { name: 'Sunset', hex: '#f43f5e' }, // Rose
+    { name: 'Gold', hex: '#f59e0b' },   // Amber
+  ];
 
   const handleAddTodo = (text: string, dueTime?: number) => {
     const newTodo: Todo = {
@@ -50,24 +62,59 @@ const AppContent: React.FC = () => {
   return (
     <div className="relative w-full min-h-screen overflow-hidden bg-[#050511] text-slate-200">
       {/* Background Visualizer Layer */}
-      <Visualizer isActive={isAnyAudioActive} />
+      <Visualizer isActive={isAnyAudioActive} baseColor={waveColor} />
 
       {/* UI Layer */}
       <div className="relative z-10 min-h-screen flex flex-col justify-between p-6">
         
         {/* Header */}
-        <header className="flex justify-between items-center max-w-6xl mx-auto w-full">
+        <header className="flex justify-between items-center max-w-6xl mx-auto w-full relative z-50">
           <div className="flex items-center gap-3 group cursor-default">
-            <div className="p-2 bg-violet-500/10 rounded-lg border border-violet-500/20 group-hover:border-violet-500/50 transition-colors">
-                <Waves className="text-violet-400" size={24} />
+            <div className="p-2 bg-white/5 rounded-lg border border-white/10 group-hover:border-white/30 transition-colors">
+                <Waves style={{ color: waveColor }} size={24} />
             </div>
-            <h1 className="text-xl font-bold tracking-wider text-violet-100 font-space-mono">
+            <h1 className="text-xl font-bold tracking-wider text-slate-100 font-space-mono">
               LUNAR WAVES
             </h1>
           </div>
-          <div className="text-xs text-slate-400 border border-slate-800 bg-slate-900/50 backdrop-blur px-3 py-1.5 rounded-full flex items-center gap-2">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full inline-block animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span> 
-            ONLINE
+
+          <div className="flex items-center gap-4">
+             {/* Settings Toggle */}
+             <div className="relative">
+                <button 
+                  onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                  className={`p-2 rounded-full transition-all ${isSettingsOpen ? 'bg-white/10 text-white' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                >
+                  <Settings2 size={20} />
+                </button>
+
+                {/* Settings Dropdown */}
+                {isSettingsOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-slate-900/90 border border-white/10 rounded-xl shadow-xl backdrop-blur-xl p-3 animate-in fade-in zoom-in-95 duration-200">
+                    <h3 className="text-[10px] font-bold text-slate-500 uppercase mb-2 tracking-wider">Wave Color</h3>
+                    <div className="grid grid-cols-5 gap-2">
+                      {colorPalettes.map((palette) => (
+                        <button
+                          key={palette.hex}
+                          onClick={() => setWaveColor(palette.hex)}
+                          className="w-8 h-8 rounded-full flex items-center justify-center transition-transform hover:scale-110 border border-white/10 relative"
+                          style={{ backgroundColor: palette.hex }}
+                          title={palette.name}
+                        >
+                          {waveColor === palette.hex && (
+                            <Check size={14} className="text-white drop-shadow-md" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+             </div>
+
+             <div className="hidden sm:flex text-xs text-slate-400 border border-slate-800 bg-slate-900/50 backdrop-blur px-3 py-1.5 rounded-full items-center gap-2">
+               <span className="w-2 h-2 bg-emerald-500 rounded-full inline-block animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span> 
+               ONLINE
+             </div>
           </div>
         </header>
 
