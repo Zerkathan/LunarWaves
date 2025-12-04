@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Play, Music, Radio } from 'lucide-react';
+import { X, Play, Music, Radio, Trash2 } from 'lucide-react';
 import { useAudioContext } from '../contexts/AudioContext';
 
 interface PlaylistPanelProps {
@@ -8,7 +8,7 @@ interface PlaylistPanelProps {
 }
 
 const PlaylistPanel: React.FC<PlaylistPanelProps> = ({ isOpen, onClose }) => {
-  const { playlist, currentTrack, playTrack, isPlaying } = useAudioContext();
+  const { playlist, currentTrack, playTrack, removeTrack, isPlaying } = useAudioContext();
 
   if (!isOpen) return null;
 
@@ -33,39 +33,53 @@ const PlaylistPanel: React.FC<PlaylistPanelProps> = ({ isOpen, onClose }) => {
         {playlist.map((track, index) => {
           const isActive = currentTrack?.id === track.id;
           return (
-            <button
+            <div 
               key={track.id}
-              onClick={() => playTrack(index)}
-              className={`w-full text-left p-2.5 rounded-lg flex items-center gap-3 transition-all group ${
+              className={`w-full flex items-center gap-2 p-1.5 rounded-lg transition-all group ${
                 isActive 
                   ? 'bg-violet-600/20 border border-violet-500/40' 
                   : 'hover:bg-white/5 border border-transparent'
               }`}
             >
-              <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${
-                isActive ? 'bg-violet-500 text-white' : 'bg-slate-800 text-slate-500 group-hover:bg-slate-700'
-              }`}>
-                 {isActive && isPlaying ? (
-                    <div className="flex gap-0.5 items-end h-3">
-                        <div className="w-0.5 bg-white h-full animate-[pulse_0.6s_ease-in-out_infinite]"></div>
-                        <div className="w-0.5 bg-white h-2/3 animate-[pulse_0.8s_ease-in-out_infinite]"></div>
-                        <div className="w-0.5 bg-white h-full animate-[pulse_1s_ease-in-out_infinite]"></div>
+              {/* Play Click Area */}
+              <button
+                onClick={() => playTrack(index)}
+                className="flex-1 flex items-center gap-3 text-left overflow-hidden outline-none"
+              >
+                <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 ${
+                    isActive ? 'bg-violet-500 text-white' : 'bg-slate-800 text-slate-500 group-hover:bg-slate-700'
+                }`}>
+                    {isActive && isPlaying ? (
+                        <div className="flex gap-0.5 items-end h-3">
+                            <div className="w-0.5 bg-white h-full animate-[pulse_0.6s_ease-in-out_infinite]"></div>
+                            <div className="w-0.5 bg-white h-2/3 animate-[pulse_0.8s_ease-in-out_infinite]"></div>
+                            <div className="w-0.5 bg-white h-full animate-[pulse_1s_ease-in-out_infinite]"></div>
+                        </div>
+                    ) : (
+                        <Play size={10} fill="currentColor" />
+                    )}
+                </div>
+                
+                <div className="min-w-0">
+                    <div className={`text-xs font-bold truncate ${isActive ? 'text-violet-200' : 'text-slate-300'}`}>
+                        {track.title}
                     </div>
-                 ) : (
-                    <Play size={10} fill="currentColor" />
-                 )}
-              </div>
-              
-              <div className="min-w-0 flex-1">
-                <div className={`text-xs font-bold truncate ${isActive ? 'text-violet-200' : 'text-slate-300'}`}>
-                    {track.title}
+                    <div className="text-[10px] text-slate-500 truncate flex items-center gap-1">
+                        {track.id.startsWith('default') ? <Radio size={10} /> : null}
+                        {track.artist}
+                    </div>
                 </div>
-                <div className="text-[10px] text-slate-500 truncate flex items-center gap-1">
-                    {track.id.startsWith('default') ? <Radio size={10} /> : null}
-                    {track.artist}
-                </div>
-              </div>
-            </button>
+              </button>
+
+              {/* Delete Action */}
+              <button 
+                onClick={(e) => { e.stopPropagation(); removeTrack(track.id); }}
+                className="p-1.5 text-slate-600 hover:text-rose-400 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all rounded-md hover:bg-rose-900/20"
+                title="Remove Track"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           );
         })}
       </div>

@@ -37,7 +37,7 @@ const BackgroundAudioPlayer: React.FC<BackgroundAudioPlayerProps> = () => {
 
     return (
         <>
-            <div className="hidden">
+            <div style={{ position: 'fixed', top: '-10000px', left: '-10000px', opacity: 0, pointerEvents: 'none' }}>
                 {(ReactPlayer as any) && (
                     <ReactPlayer
                         ref={playerRef}
@@ -49,11 +49,11 @@ const BackgroundAudioPlayer: React.FC<BackgroundAudioPlayerProps> = () => {
                         onEnded={nextTrack}
                         onError={handleError}
                         onPlay={handlePlay}
-                        width="0"
-                        height="0"
+                        width="1px"
+                        height="1px"
                         config={{
                             youtube: {
-                                playerVars: { showinfo: 0, controls: 0, disablekb: 1 }
+                                playerVars: { showinfo: 0, controls: 0, disablekb: 1, playsinline: 1, origin: window.location.origin }
                             }
                         } as any}
                     />
