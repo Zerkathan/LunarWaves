@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from 'react';
+﻿import React, { createContext, useContext, useState, useRef, useEffect, ReactNode, useCallback } from 'react';
 
 // Tipos
 export interface Track {
@@ -155,6 +155,8 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // If more than 3 seconds in, just restart track
     if (mainAudioRef.current && mainAudioRef.current.currentTime > 3) {
         mainAudioRef.current.currentTime = 0;
+        if (!isPlaying) setIsPlaying(true);
+        else safePlay();
         return;
     }
 
@@ -211,6 +213,8 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const indexToRemove = prev.findIndex(t => t.id === id);
         if (indexToRemove === -1) return prev;
 
+        const newPlaylist = prev.filter(t => t.id !== id);
+
         // Logic to keep playback stable
         if (indexToRemove === currentIndex) {
             // Deleting the current track -> Stop playing
@@ -218,12 +222,28 @@ export const AudioProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             if(mainAudioRef.current) mainAudioRef.current.pause();
             // Reset loaded ref so it doesn't think it's still loaded
             loadedTrackIdRef.current = null;
+            
+            // Adjust currentIndex to prevent auto-loading next track
+            if (newPlaylist.length === 0) {
+                // No tracks left, reset to 0
+                setCurrentIndex(0);
+            } else if (currentIndex >= newPlaylist.length) {
+                // Was the last track, move to the new last track
+                setCurrentIndex(newPlaylist.length - 1);
+            }
+            // Otherwise, currentIndex stays the same (will point to next track)
+            // but since we paused and cleared loadedTrackIdRef, CORE AUDIO SYNC
+            // will load it. To prevent this, we could decrement:
+            else if (currentIndex > 0) {
+                // Move to previous track to avoid auto-loading
+                setCurrentIndex(currentIndex - 1);
+            }
         } else if (indexToRemove < currentIndex) {
             // Deleting a previous track -> Shift index down to keep pointing to same song
             setCurrentIndex(c => Math.max(0, c - 1));
         }
 
-        return prev.filter(t => t.id !== id);
+        return newPlaylist;
     });
   }, [currentIndex]);
 

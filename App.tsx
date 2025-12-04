@@ -9,6 +9,8 @@ import LevelTracker from './components/LevelTracker';
 import MeditateMode from './components/MeditateMode';
 import DailyReflection from './components/DailyReflection';
 import CalendarWidget from './components/CalendarWidget';
+import DateTimeDisplay from './components/DateTimeDisplay';
+import SupportWidget from './components/SupportWidget';
 import { AudioProvider, useAudioContext } from './contexts/AudioContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Todo } from './types';
@@ -229,7 +231,10 @@ const AppContent: React.FC = () => {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col justify-center items-center py-12 w-full max-w-4xl mx-auto">
+        <main className="flex-1 flex flex-col justify-center items-center py-12 w-full max-w-4xl mx-auto pb-44">
+          {/* Date & Time Display */}
+          <DateTimeDisplay />
+          
           <Timer onTimerComplete={() => console.log('Session done')} />
           
           <div className="flex flex-wrap justify-center items-start gap-4 mt-8 w-full">
@@ -248,13 +253,18 @@ const AppContent: React.FC = () => {
               <LevelTracker completedCount={completedCount} />
             )}
           </div>
+
+          {/* Support Widget */}
+          <SupportWidget />
         </main>
 
-        {/* Footer */}
-        <div className="pb-4">
-           <AudioControl /> 
-        </div>
+      </div>
 
+      {/* Sticky Music Player Footer */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
+        <div className="pointer-events-auto">
+          <AudioControl /> 
+        </div>
       </div>
     </div>
   );
